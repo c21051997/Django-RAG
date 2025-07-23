@@ -27,7 +27,6 @@ def load_components():
 
     prompt_template = """
     You are an expert assistant for the Django web framework. Answer the user's question based ONLY on the following context.
-    If the context contains a relevant code example, prioritize showing the code in your answer.
     If the context doesn't contain the answer, say "I don't have enough information to answer that question."
 
     CONTEXT:
