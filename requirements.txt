@@ -5,7 +5,10 @@ langchain-chroma
 langchain-community
 langchain-huggingface
 langchain_ollama
-pysqlite3-binary
+langchain-openai
+langchain_pinecone
+openai
+pinecone-client
 requests 
 sentence-transformers
 streamlit 
