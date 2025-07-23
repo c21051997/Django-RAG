@@ -16,7 +16,7 @@ DB_PATH = "chroma_db"
 EMBEDDING_MODEL = "BAAI/bge-base-en-v1.5"
 # The name of the local LLM that is being used for generation
 # It around the limit of what can be ran on my laptop
-LLM_MODEL = "mistralai/Mistral-7B-Instruct-v0.2"
+HF_LLM_ENDPOINT = "mistralai/Mistral-7B-Instruct-v0.2"
 
 
 # Use st.cache_resource to run this function only once, the first time the app loads
