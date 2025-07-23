@@ -8,11 +8,11 @@ from tqdm import tqdm # (Library for creating a simple progress bar)
 
 # Config 
 # Path to the folder containing the scraped JSON files
-DATA_PATH = "../data/django_docs"
+DATA_PATH = "data/django_docs"
 # Path to where the vector db will be stored
 DB_PATH = "chroma_db"
 # The hugging face modelfor creating text embeddings
-EMBEDDING_MODEL = "BAAI/bge-base-en-v1.5"
+EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 # Settings for splitting text into chunks
 CHUNK_SIZE = 1000
 CHUNK_OVERLAP = 100

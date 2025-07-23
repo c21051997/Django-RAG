@@ -13,7 +13,7 @@ from langchain_core.output_parsers import StrOutputParser
 # Config
 # The path to the Chroma vector database we created in build_index.py
 DB_PATH = "chroma_db"
-EMBEDDING_MODEL = "BAAI/bge-base-en-v1.5"
+EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 # The name of the local LLM that is being used for generation
 # It around the limit of what can be ran on my laptop
 HF_LLM_ENDPOINT = "mistralai/Mistral-7B-Instruct-v0.2"
