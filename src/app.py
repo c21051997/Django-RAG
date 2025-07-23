@@ -4,9 +4,9 @@ sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 
 import streamlit as st
 from langchain_chroma import Chroma
-from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings, HuggingFaceEndpoint
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_ollama import ChatOllama
+# from langchain_ollama import ChatOllama
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
 
@@ -16,7 +16,7 @@ DB_PATH = "chroma_db"
 EMBEDDING_MODEL = "BAAI/bge-base-en-v1.5"
 # The name of the local LLM that is being used for generation
 # It around the limit of what can be ran on my laptop
-LLM_MODEL = "gemma:2b"
+LLM_MODEL = "mistralai/Mistral-7B-Instruct-v0.2"
 
 
 # Use st.cache_resource to run this function only once, the first time the app loads
@@ -34,13 +34,23 @@ def load_components():
 
     # Load the Chroma vector store
     vector_store = Chroma(persist_directory=DB_PATH, embedding_function=embeddings)
+    
     # Create the retriever, which is a tool to find relevant documents from the vector store
     # Retrieve top 3 most relevant chunks
     retriever = vector_store.as_retriever(search_kwargs={"k": 3})
     
-    # Define the Large Language Model (LLM) from Ollama
-    llm = ChatOllama(model=LLM_MODEL)
+    # # Define the Large Language Model (LLM) from Ollama
+    # llm = ChatOllama(model=LLM_MODEL)
     
+    # Define the LLM using the Hugging Face Endpoint
+    llm = HuggingFaceEndpoint(
+        repo_id=HF_LLM_ENDPOINT,
+        max_length=128,
+        temperature=0.5,
+        huggingfacehub_api_token=st.secrets["HF_TOKEN"],
+    )
+    
+
     # Define the prompt template
     # This structures how we ask the LLM to behave
     prompt_template = """
