@@ -66,10 +66,7 @@ def load_rag_chain():
     # RAG chain that defines the step by step process
     # | "pipes" the output of one step to the next
     rag_chain = (
-        # The retriever is now part of a dictionary that gets passed along
-        {"question": RunnablePassthrough()}
-        # We add a new key 'context' by running the retriever and then our explicit formatting function
-        .assign(context=(lambda x: x["question"]) | retriever | format_docs)
+        {"context": retriever | format_docs, "question": RunnablePassthrough()}
         | prompt
         | llm
         | StrOutputParser()
