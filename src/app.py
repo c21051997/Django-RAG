@@ -102,6 +102,7 @@ if prompt := st.chat_input("How do I create a model?"):
     with st.chat_message("assistant"):
         # Show a "Thinking..." spinner while the RAG chain is working
         with st.spinner("Thinking..."):
+            # Debugging
             retrieved_docs = retriever.invoke(prompt)
             with st.expander("🔍 View Retrieved Context"):
                 st.write(f"Found {len(retrieved_docs)} documents.")
@@ -109,7 +110,7 @@ if prompt := st.chat_input("How do I create a model?"):
                     st.write(f"--- Document {i+1} ---")
                     st.write(doc.page_content)
                     st.write(f"Source: {doc.metadata.get('source', 'N/A')}")
-                    
+
             # Call the RAG chain with the user's prompt to get the answer
             response = rag_chain.invoke(prompt)
             st.markdown(response)
