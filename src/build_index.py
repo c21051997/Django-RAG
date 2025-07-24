@@ -1,68 +1,57 @@
-# This must be the first lines of your app.py
-__import__('pysqlite3')
-import sys
-sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+import os
+import json
 
-import streamlit as st
 from pinecone import Pinecone
+
+# Langchain: framework for building applications with LLMs
 from langchain_pinecone import PineconeVectorStore
 from langchain_openai import OpenAIEmbeddings
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.docstore.document import Document
+from tqdm import tqdm # (Library for creating a simple progress bar)
 
-# --- CONFIGURATION ---
-INDEX_NAME = "django-docs"
+# Config 
+# Load the secret API keys from the local environment variables
+PINECONE_API_KEY = os.environ.get("PINECONE_API_KEY")
+PINECONE_ENVIRONMENT = os.environ.get("PINECONE_ENVIRONMENT")
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+
 NAMESPACE = "django-docs-namespace"
+# Index from the Pinecone account
+INDEX_NAME = "django-docs"
+# Folder where the scraped data is stored
+DATA_PATH = "data/django_docs"
 
-st.set_page_config(page_title="Debug Retriever", page_icon="🔍")
-st.title("Pinecone Retriever Debugger 🔍")
-st.write("This app tests the connection to Pinecone and shows the raw retrieved documents.")
+def main():
+    pc = Pinecone(api_key=PINECONE_API_KEY)
 
-try:
-    # --- INITIALIZE COMPONENTS ---
-    st.write("1. Initializing Pinecone client...")
-    pc = Pinecone(api_key=st.secrets["PINECONE_API_KEY"])
-    st.write("   ✅ Pinecone client initialized.")
-    
-    st.write("2. Initializing OpenAI embeddings...")
-    embeddings = OpenAIEmbeddings(openai_api_key=st.secrets["OPENAI_API_KEY"])
-    st.write("   ✅ OpenAI embeddings initialized.")
-    
-    st.write("3. Connecting to Pinecone index...")
-    vector_store = PineconeVectorStore.from_existing_index(
-        index_name=INDEX_NAME, 
-        embedding=embeddings,
-        namespace=NAMESPACE
-    )
-    st.write("   ✅ Connected to Pinecone index.")
+    # This function builds the entire vector index
+    print("Loading documents...")
+    documents = []
+    # Load all the scraped documentation from the JSON files
+    for filename in os.listdir(DATA_PATH):
+        if filename.endswith('.json'):
+            filepath = os.path.join(DATA_PATH, filename)
+            with open(filepath, 'r', encoding='utf-8') as f:
+                # Each file is loaded into a LangChain document object
+                # Stores the text content and source URL as metadata
+                data = json.load(f)
+                documents.append(Document(page_content=data['content'], metadata={'source': data['url']}))
 
-    st.write("4. Creating retriever...")
-    retriever = vector_store.as_retriever()
-    st.write("   ✅ Retriever created.")
-    
-    st.success("All components initialized successfully!")
+    # Spliting the documents into smaller chunks to make searching easier
+    print("Splitting documents...")
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
+    chunks = text_splitter.split_documents(documents)
 
-except Exception as e:
-    st.error(f"An error occurred during initialization: {e}")
-    st.stop()
+    # Set up connection to OpenAI's API to create embeddings
+    print("Initializing OpenAI embeddings...")
+    embeddings = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY)
 
+    # Convert all text chunks into vecotr embeddings and upload to Pinecone
+    print(f"Uploading {len(chunks)} chunks to Pinecone index '{INDEX_NAME}'...")
+    PineconeVectorStore.from_documents(chunks, embeddings, index_name=INDEX_NAME, namespace=NAMESPACE)
 
-# --- DEBUGGING UI ---
-prompt = st.text_input("Enter a question to test the retriever:")
+    print("✅ Index built and uploaded successfully!")
 
-if prompt:
-    st.write(f"Searching for documents related to: '{prompt}'")
-    with st.spinner("Retrieving documents..."):
-        try:
-            # Invoke the retriever to get relevant documents
-            retrieved_docs = retriever.invoke(prompt)
-            
-            st.subheader("Retrieved Documents:")
-            if not retrieved_docs:
-                st.warning("The retriever found 0 documents.")
-            else:
-                st.info(f"The retriever found {len(retrieved_docs)} documents.")
-                for i, doc in enumerate(retrieved_docs):
-                    with st.expander(f"Document {i+1} - Source: {doc.metadata.get('source', 'N/A')}"):
-                        st.write(doc.page_content)
-
-        except Exception as e:
-            st.error(f"An error occurred during retrieval: {e}")
+if __name__ == "__main__":
+    main()
