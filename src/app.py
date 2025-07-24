@@ -25,10 +25,7 @@ def load_components():
     embeddings = OpenAIEmbeddings(openai_api_key=st.secrets["OPENAI_API_KEY"])
 
     # Connect to the existing Pinecone vector db
-    vector_store = PineconeVectorStore(
-        index_name=INDEX_NAME, 
-        embedding=embeddings, 
-        pinecone_api_key=st.secrets["PINECONE_API_KEY"])
+    vector_store = PineconeVectorStore.from_existing_index(index_name=INDEX_NAME, embedding=embeddings)
     
     # Create a 'retriever', a tools to search the vector db
     retriever = vector_store.as_retriever()
