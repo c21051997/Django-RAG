@@ -18,6 +18,8 @@ INDEX_NAME = "django-docs"
 # OpenAI model we're using to generate responses
 LLM_MODEL = "gpt-3.5-turbo"
 
+NAMESPACE = "django-docs-namespace"
+
 #  Rag Chain Setup 
 # @st.cache_resource tells Streamlit to run this function only once
 @st.cache_resource
@@ -30,7 +32,7 @@ def load_components():
     embeddings = OpenAIEmbeddings(openai_api_key=st.secrets["OPENAI_API_KEY"])
 
     # Connect to the existing Pinecone vector db
-    vector_store = PineconeVectorStore.from_existing_index(index_name=INDEX_NAME, embedding=embeddings)
+    vector_store = PineconeVectorStore.from_existing_index(index_name=INDEX_NAME, embedding=embeddings, namespace=NAMESPACE)
     
     # Create a 'retriever', a tools to search the vector db
     retriever = vector_store.as_retriever()

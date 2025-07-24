@@ -16,6 +16,7 @@ PINECONE_API_KEY = os.environ.get("PINECONE_API_KEY")
 PINECONE_ENVIRONMENT = os.environ.get("PINECONE_ENVIRONMENT")
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 
+NAMESPACE = "django-docs-namespace"
 # Index from the Pinecone account
 INDEX_NAME = "django-docs"
 # Folder where the scraped data is stored
@@ -48,7 +49,7 @@ def main():
 
     # Convert all text chunks into vecotr embeddings and upload to Pinecone
     print(f"Uploading {len(chunks)} chunks to Pinecone index '{INDEX_NAME}'...")
-    PineconeVectorStore.from_documents(chunks, embeddings, index_name=INDEX_NAME)
+    PineconeVectorStore.from_documents(chunks, embeddings, index_name=INDEX_NAME, namespace=NAMESPACE)
 
     print("✅ Index built and uploaded successfully!")
 
