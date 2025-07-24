@@ -77,7 +77,7 @@ st.title("Django DocuBot 🤖")
 
 # Load all of the AI components, show error if failure
 try:
-    rag_chain = load_components()
+    rag_chain, retriever = load_components()
 except Exception as e:
     st.error(f"Failed to load components: {e}")
     st.stop()
@@ -102,6 +102,14 @@ if prompt := st.chat_input("How do I create a model?"):
     with st.chat_message("assistant"):
         # Show a "Thinking..." spinner while the RAG chain is working
         with st.spinner("Thinking..."):
+            retrieved_docs = retriever.invoke(prompt)
+            with st.expander("🔍 View Retrieved Context"):
+                st.write(f"Found {len(retrieved_docs)} documents.")
+                for i, doc in enumerate(retrieved_docs):
+                    st.write(f"--- Document {i+1} ---")
+                    st.write(doc.page_content)
+                    st.write(f"Source: {doc.metadata.get('source', 'N/A')}")
+                    
             # Call the RAG chain with the user's prompt to get the answer
             response = rag_chain.invoke(prompt)
             st.markdown(response)
