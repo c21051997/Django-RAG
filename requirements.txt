@@ -9,6 +9,7 @@ langchain-openai
 langchain_pinecone
 openai
 pinecone-client
+pysqlite3-binary
 requests 
 sentence-transformers
 streamlit 
