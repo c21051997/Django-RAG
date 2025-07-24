@@ -4,6 +4,8 @@ import sys
 sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 
 import streamlit as st
+from pinecone import Pinecone
+
 from langchain_pinecone import PineconeVectorStore
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
@@ -21,6 +23,9 @@ LLM_MODEL = "gpt-3.5-turbo"
 @st.cache_resource
 def load_components():
     print("Loading components...")
+
+    pc = Pinecone(api_key=st.secrets["PINECONE_API_KEY"])
+
     # Collect the APi key from Streamlists secrets manager
     embeddings = OpenAIEmbeddings(openai_api_key=st.secrets["OPENAI_API_KEY"])
 
