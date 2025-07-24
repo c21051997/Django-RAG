@@ -97,7 +97,7 @@ if user_prompt := st.chat_input("How do I create a model?"):
             {context}
 
             QUESTION:
-            {question}
+            {user_prompt}
 
             ANSWER:
             """
@@ -106,6 +106,6 @@ if user_prompt := st.chat_input("How do I create a model?"):
             response = llm.invoke(final_prompt).content
             
             st.markdown(response)
-            
+
     # Add the assistant's response to the history
     st.session_state.messages.append({"role": "assistant", "content": response})
