@@ -6,63 +6,96 @@ sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 import streamlit as st
 from pinecone import Pinecone
 from langchain_pinecone import PineconeVectorStore
-from langchain_openai import OpenAIEmbeddings
+from langchain_openai import OpenAIEmbeddings, ChatOpenAI
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.runnables import RunnablePassthrough
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.documents import Document
 
 # --- CONFIGURATION ---
 INDEX_NAME = "django-docs"
 NAMESPACE = "django-docs-namespace"
+LLM_MODEL = "gpt-3.5-turbo"
 
-st.set_page_config(page_title="Debug Retriever", page_icon="🔍")
-st.title("Pinecone Retriever Debugger 🔍")
-st.write("This app tests the connection to Pinecone and shows the raw retrieved documents.")
+# --- HELPER FUNCTION ---
+def format_docs(docs: list[Document]) -> str:
+    """A helper function to format the retrieved documents into a single string."""
+    return "\n\n".join(doc.page_content for doc in docs)
 
-try:
-    # --- INITIALIZE COMPONENTS ---
-    st.write("1. Initializing Pinecone client...")
+# --- RAG COMPONENTS SETUP ---
+@st.cache_resource
+def load_components():
+    """
+    Loads the retriever and the language model.
+    This function is cached to run only once.
+    """
+    print("Loading RAG components...")
+    
+    # Initialize Pinecone and OpenAI components
     pc = Pinecone(api_key=st.secrets["PINECONE_API_KEY"])
-    st.write("   ✅ Pinecone client initialized.")
-    
-    st.write("2. Initializing OpenAI embeddings...")
     embeddings = OpenAIEmbeddings(openai_api_key=st.secrets["OPENAI_API_KEY"])
-    st.write("   ✅ OpenAI embeddings initialized.")
+    llm = ChatOpenAI(model_name=LLM_MODEL, temperature=0, openai_api_key=st.secrets["OPENAI_API_KEY"])
     
-    st.write("3. Connecting to Pinecone index...")
+    # Load the vector store and create the retriever
     vector_store = PineconeVectorStore.from_existing_index(
         index_name=INDEX_NAME, 
         embedding=embeddings,
         namespace=NAMESPACE
     )
-    st.write("   ✅ Connected to Pinecone index.")
-
-    st.write("4. Creating retriever...")
     retriever = vector_store.as_retriever()
-    st.write("   ✅ Retriever created.")
     
-    st.success("All components initialized successfully!")
+    print("Components loaded successfully.")
+    return retriever, llm
 
+# --- STREAMLIT UI ---
+st.set_page_config(page_title="Django DocuBot", page_icon="🤖")
+st.title("Django DocuBot 🤖")
+
+try:
+    # Load the two main components
+    retriever, llm = load_components()
 except Exception as e:
-    st.error(f"An error occurred during initialization: {e}")
+    st.error(f"Failed to load AI components: {e}")
     st.stop()
 
+if "messages" not in st.session_state:
+    st.session_state.messages = []
 
-# --- DEBUGGING UI ---
-prompt = st.text_input("Enter a question to test the retriever:")
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
 
-if prompt:
-    st.write(f"Searching for documents related to: '{prompt}'")
-    with st.spinner("Retrieving documents..."):
-        try:
-            # Invoke the retriever to get relevant documents
-            retrieved_docs = retriever.invoke(prompt)
+if user_prompt := st.chat_input("How do I create a model?"):
+    st.session_state.messages.append({"role": "user", "content": user_prompt})
+    st.chat_message("user").markdown(user_prompt)
+
+    with st.chat_message("assistant"):
+        with st.spinner("Thinking..."):
+            # This is the new, explicit, and robust process
             
-            st.subheader("Retrieved Documents:")
-            if not retrieved_docs:
-                st.warning("The retriever found 0 documents.")
-            else:
-                st.info(f"The retriever found {len(retrieved_docs)} documents.")
-                for i, doc in enumerate(retrieved_docs):
-                    with st.expander(f"Document {i+1} - Source: {doc.metadata.get('source', 'N/A')}"):
-                        st.write(doc.page_content)
-
-        except Exception as e:
-            st.error(f"An error occurred during retrieval: {e}")
+            # 1. Retrieve documents first
+            retrieved_docs = retriever.invoke(user_prompt)
+            
+            # 2. Format the documents into a single context string
+            context = format_docs(retrieved_docs)
+            
+            # 3. Manually create the final prompt
+            final_prompt = f"""
+            You are an expert assistant for the Django web framework. Answer the user's question based ONLY on the following context.
+            If the context is empty or doesn't contain the answer, say "I don't have enough information to answer that question."
+            
+            CONTEXT:
+            {context}
+            
+            QUESTION:
+            {user_prompt}
+            
+            ANSWER:
+            """
+            
+            # 4. Invoke the LLM with the final prompt
+            response = llm.invoke(final_prompt).content
+            
+            st.markdown(response)
+            
+    st.session_state.messages.append({"role": "assistant", "content": response})
