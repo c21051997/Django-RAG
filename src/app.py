@@ -89,7 +89,7 @@ if user_prompt := st.chat_input("How do I create a model?"):
             context = format_docs(retrieved_docs)
 
             # Create the prompt that will be sent to the LLM
-            final_prompt = """
+            final_prompt = f"""
             You are an expert assistant for the Django web framework. Answer the user's question based ONLY on the following context.
             If the context doesn't contain the answer, say "I don't have enough information to answer that question."
 
